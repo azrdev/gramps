@@ -40,6 +40,7 @@ Create a relationship graph using Graphviz
 #
 #------------------------------------------------------------------------
 from functools import partial
+import itertools
 
 #------------------------------------------------------------------------
 #
@@ -258,7 +259,9 @@ class RelGraphReport(Report):
 
                 # add all spouses and children to the todo list
                 family_list = person.get_family_handle_list()
-                for fam_handle in family_list:
+                parent_family_list = person.get_parent_family_handle_list()
+                for fam_handle in itertools.chain(family_list,
+                                                  parent_family_list):
                     family = self.database.get_family_from_handle(fam_handle)
                     if family is None:
                         continue
@@ -297,11 +300,12 @@ class RelGraphReport(Report):
                         frel = child_ref.frel
                         mrel = child_ref.mrel
                         break
-                if (self.show_families and
-                        ((father_handle and father_handle in person_dict) or
-                         (mother_handle and mother_handle in person_dict))):
-                    # Link to the family node if either parent is in graph
-                    self.add_family_link(p_id, family, frel, mrel)
+                if self.show_families:
+                    if (father_handle and father_handle in person_dict) or \
+                         (mother_handle and mother_handle in person_dict) or \
+                            not father_handle and not mother_handle:
+                        # Link to the family node if either parent is in graph
+                        self.add_family_link(p_id, family, frel, mrel)
                 else:
                     # Link to the parents' nodes directly, if they are in graph
                     if father_handle and father_handle in person_dict:
@@ -366,7 +370,8 @@ class RelGraphReport(Report):
             # Output families where person is a parent
             if self.show_families:
                 family_list = person.get_family_handle_list()
-                for fam_handle in family_list:
+                parent_family_list = person.get_parent_family_handle_list()
+                for fam_handle in itertools.chain(family_list, parent_family_list):
                     family = self._db.get_family_from_handle(fam_handle)
                     if family is None:
                         continue
